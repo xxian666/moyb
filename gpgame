@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🎯 赚够一个亿 </title>
+    <style>
+        :root {
+            --bg: #0a0e14; --card: #131820; --card2: #1a2230; --border: #252d3a;
+            --text: #d1d5db; --text2: #8b929a; --gold: #f0b90b; --green: #4ade80;
+            --red: #f87171; --blue: #60a5fa; --pink: #f472b6; --teal: #2dd4bf;
+            --purple: #c084fc; --input-bg: #0d1117;
+            --font-mono: 'SF Mono','Cascadia Code','Consolas',monospace;
+            --font-sans: -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background: #05080d; color: var(--text); font-family: var(--font-sans); height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center; user-select: none; }
+        .game-container { width: 100%; max-width: 480px; height: 100vh; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+        .top-bar { background: var(--card); border-bottom: 1px solid var(--border); padding: 6px 8px; flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; font-size: 0.65em; }
+        .stat-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 5px; background: var(--card2); border-radius: 3px; }
+        .stat-value { font-weight: 700; font-family: var(--font-mono); }
+        .gold { color: var(--gold); } .green { color: var(--green); } .pink { color: var(--pink); } .teal { color: var(--teal); } .blue { color: var(--blue); } .purple { color: var(--purple); }
+        .progress-mini { grid-column: span 2; display: flex; align-items: center; gap: 4px; }
+        .prog-bar { flex:1; height:5px; background:#1e293b; border-radius:3px; overflow:hidden; }
+        .prog-fill { height:100%; background:linear-gradient(90deg,#f0b90b,#f7c948); border-radius:3px; transition: width 0.3s; }
+        .content-area { flex:1; overflow-y: auto; padding: 4px; }
+        .view { display: none; } .view.active { display: block; }
+        .section-title { font-size:0.65em; color:var(--text2); margin:6px 0 3px; border-bottom:1px solid var(--border); padding-bottom:2px; }
+        .cat-tag {display:inline-block; font-size:0.5em; padding:1px 4px; border-radius:2px; margin:2px 0; font-weight:600;}
+        .cat-stock{background:rgba(248,113,113,0.2);color:#fca5a5;} .cat-fund{background:rgba(96,165,250,0.2);color:#93c5fd;} .cat-metal{background:rgba(240,185,11,0.2);color:#fcd34d;}
+        .asset-row { display:flex; align-items:center; padding:5px 6px; cursor:pointer; gap:6px; border:1px solid transparent; font-size:0.62em; justify-content: space-between; }
+        .asset-row:hover,.asset-row.selected{background:var(--card2);border-color:var(--border);}
+        .asset-left { display:flex; align-items:center; gap:4px; flex:1; min-width:0; }
+        .asset-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+        .a-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7em;flex-shrink:0;}
+        .icon-stock{background:rgba(248,113,113,0.2);color:#fca5a5;} .icon-fund{background:rgba(96,165,250,0.2);color:#93c5fd;} .icon-metal{background:rgba(240,185,11,0.2);color:#fcd34d;}
+        .risk-tag{font-size:0.45em;padding:0px 2px;border-radius:2px;}
+        .risk-low{background:rgba(74,222,128,0.2);color:#4ade80;} .risk-mid{background:rgba(251,146,60,0.2);color:#fb923c;} .risk-high{background:rgba(248,113,113,0.2);color:#f87171;}
+        .chg-up{color:#fff;background:rgba(248,113,113,0.7);} .chg-down{color:#fff;background:rgba(74,222,128,0.7);} .chg-flat{color:var(--text2);background:rgba(139,146,154,0.3);}
+        .btn { padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-weight:700; font-size:0.6em; }
+        .btn-sm { padding:3px 7px; font-size:0.55em; }
+        .btn-buy{background:#dc2626;color:#fff;} .btn-sell{background:#16a34a;color:#fff;}
+        .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+        .holding-card { background:var(--card2); border-radius:4px; padding:6px; margin:2px 0; display:flex; align-items:center; gap:4px; font-size:0.62em; flex-wrap:wrap; }
+        .act-btn { display:flex; align-items:center; gap:5px; background:var(--card2); border:1px solid var(--border); border-radius:4px; padding:8px; margin:3px 0; cursor:pointer; font-size:0.65em; color:var(--text); }
+        .act-btn:active{opacity:0.8;} .act-btn:disabled{opacity:0.4; pointer-events:none;}
+        .event-item { padding:3px 0; border-bottom:1px solid rgba(37,45,58,0.6); font-size:0.58em; line-height:1.3; }
+        .nav-bar { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; height:50px; }
+        .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text2); font-size:0.5em; cursor:pointer; }
+        .nav-item.active { color:var(--gold); }
+        .bottom-action { padding:4px 8px; background:var(--bg); }
+        .btn-next-day { width:100%; padding:10px; border:none; border-radius:16px; background:linear-gradient(135deg,#f0b90b,#e8a800); color:#000; font-weight:800; font-size:0.75em; }
+        .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:1000; }
+        .modal { background:var(--card); border:2px solid var(--gold); border-radius:8px; padding:16px; text-align:center; max-width:90%; width:350px; box-shadow:0 0 40px rgba(240,185,11,0.3); position:relative; }
+        .toast { position:fixed; top:16px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:6px 14px; border-radius:14px; font-weight:700; font-size:0.65em; z-index:999; animation:toastIn 0.3s; }
+        .toast.err{background:#dc2626;}
+        @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+        .chart-container { background:var(--card); border-radius:4px; padding:4px; margin-top:6px; }
+        canvas { width:100%; height:100px; display:block; }
+        .achievement-item { padding:6px; margin:3px 0; background:var(--card2); border-radius:3px; font-size:0.65em; display:flex; align-items:center; gap:6px; }
+        .achievement-item.locked { opacity:0.6; }
+        .network-card { background:var(--card2); border-radius:4px; padding:6px; margin:4px 0; display:flex; align-items:center; gap:6px; font-size:0.6em; }
+        .network-card button { margin-left:auto; }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="top-bar">
+        <div class="stat-item"><span>💰总资产</span><span class="stat-value gold" id="topTotalAsset" onclick="openAssetDetail()" style="cursor:pointer; text-decoration:underline;">100,000</span></div>
+        <div class="stat-item"><span>💵现金</span><span class="stat-value green" id="topCash">100,000</span></div>
+        <div class="stat-item"><span>😊心情</span><span class="stat-value pink" id="topMood">60</span></div>
+        <div class="stat-item"><span>⚡体力</span><span class="stat-value teal" id="topStamina">100/100</span></div>
+        <div class="stat-item"><span>🤝诚信</span><span class="stat-value blue" id="topCredit">100</span></div>
+        <div class="stat-item"><span>🧠技能</span><span class="stat-value purple" id="topSkill">60</span></div>
+        <div class="progress-mini"><span>🎯</span><div class="prog-bar"><div class="prog-fill" id="topProgress" style="width:0.1%;"></div></div><span id="topProgressPct">0.1%</span></div>
+    </div>
+    <div class="content-area" id="contentArea">
+        <div class="view active" id="view-trade">
+            <div class="section-title">📊 行情</div><div id="marketList"></div>
+            <div style="margin:5px 0;font-size:0.55em;color:var(--text2);">💡 点击资产查看K线 | 低🟢/中🟠/高🔴风险</div>
+            <div id="chartPanel" class="chart-container" style="display:none;"><canvas id="klineCanvas"></canvas><div style="display:flex;justify-content:space-between;font-size:0.5em;margin-top:2px;"><span id="macdInfo"></span><span id="volInfo"></span></div></div>
+            <div style="margin-top:5px;border-top:1px solid var(--border);padding-top:5px;">
+                <div id="tradeSelectedInfo" style="font-size:0.6em;color:var(--text2);">👆 请选择资产</div>
+                <div style="display:flex;gap:3px;align-items:center;margin-top:2px;">
+                    <input type="number" id="tradeQty" placeholder="数量" min="1" value="100" style="width:55px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-family:var(--font-mono);">
+                    <span id="tradeEstimate" style="font-size:0.55em;">--</span>
+                    <button class="btn btn-buy btn-sm" id="btnBuy">买入</button><button class="btn btn-sell btn-sm" id="btnSell">卖出</button>
+                </div>
+            </div>
+        </div>
+        <div class="view" id="view-assets">
+            <div class="section-title">📋 持仓</div><div id="holdingsList"></div>
+            <div class="section-title">💼 工作与贷款</div>
+            <div id="jobInfoCard" style="font-size:0.6em;"></div><div id="loanInfoCard" style="font-size:0.6em;"></div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">
+                <button class="btn btn-outline btn-sm" id="btnFindJob" onclick="openJobModal()">🔍 找工作</button>
+                <button class="btn btn-outline btn-sm" id="btnQuitJob" style="display:none;" onclick="quitJob()">辞职</button>
+                <button class="btn btn-outline btn-sm" id="btnOvertime" style="display:none;" onclick="doOvertime()">🔥加班</button>
+                <button class="btn btn-outline btn-sm" id="btnLeaveEarly" style="display:none;" onclick="doLeaveEarly()">🏃提前下班</button>
+                <button class="btn btn-outline btn-sm" onclick="openLoanModal()">🏦 贷款</button>
+                <button class="btn btn-outline btn-sm" id="btnRepayLoan" style="display:none;" onclick="repayLoan()">还贷</button>
+                <button class="btn btn-outline btn-sm" id="btnLeverage" onclick="openLeverageModal()">📈 杠杆</button>
+            </div>
+            <div class="section-title" id="networkTitle" style="display:none;">👥 人脉</div>
+            <div id="networkList"></div>
+        </div>
+        <div class="view" id="view-activities">
+            <div class="section-title">🎭 活动</div><div id="activityList"></div>
+            <div class="section-title">🏠 房产</div><div id="propertyList"></div>
+        </div>
+        <div class="view" id="view-events"><div class="section-title">📰 事件</div><div id="eventLogContent"></div></div>
+        <div class="view" id="view-achievements">
+            <div class="section-title">🏅 成就</div><div id="achievementList"></div>
+            <div class="section-title">🎯 里程碑</div><div id="milestoneList"></div>
+        </div>
+    </div>
+    <div class="nav-bar">
+        <div class="nav-item active" data-view="trade"><span>📊</span>交易</div>
+        <div class="nav-item" data-view="assets"><span>📋</span>资产</div>
+        <div class="nav-item" data-view="activities"><span>🎭</span>活动</div>
+        <div class="nav-item" data-view="events"><span>📰</span>事件</div>
+        <div class="nav-item" data-view="achievements"><span>🏅</span>成就</div>
+    </div>
+    <div class="bottom-action"><button class="btn-next-day" id="btnNextDay">⏭️ 进入下一天</button></div>
+</div>
+<div id="toastContainer"></div>
+<!-- 资产详情弹窗 -->
+<div class="modal-overlay" id="assetDetailModal" style="display:none;"><div class="modal" style="width:90%;max-width:400px;font-size:0.9em;text-align:left;"><h2 style="text-align:center;">📊 资产明细</h2><div id="assetDetailContent"></div><button class="btn-outline" onclick="document.getElementById('assetDetailModal').style.display='none'" style="margin-top:10px;">关闭</button><button class="btn-sm btn-outline" style="position:absolute;top:10px;right:10px;" onclick="openRedeemModal()">🎁</button></div></div>
+<div class="modal-overlay" id="redeemModal" style="display:none;"><div class="modal"><h3>🎁 兑换码</h3><input id="redeemInput" placeholder="输入兑换码" style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);border-radius:4px;margin:8px 0;"><button class="btn-gold btn-sm" onclick="redeemCode()">兑换</button><button class="btn-outline btn-sm" onclick="document.getElementById('redeemModal').style.display='none'" style="margin-left:5px;">退出</button><div id="redeemMsg" style="font-size:0.7em;margin-top:6px;"></div></div></div>
+<div class="modal-overlay" id="winModal" style="display:none;"><div class="modal"><h2>🏆 天才交易员！</h2><p>资产破1亿</p><button class="btn-gold" onclick="continuePlaying()">继续</button></div></div>
+<div class="modal-overlay" id="gameOverModal" style="display:none;"><div class="modal" style="border-color:#ef4444;"><h2 style="color:#ef4444;">已破产</h2><h3>GAME OVER</h3><p id="goReason"></p><button onclick="restartGame()">重新开始</button></div></div>
+<div class="modal-overlay" id="jobModal" style="display:none;"><div class="modal"><h2>🔍 工作</h2><div id="jobListContainer"></div><button class="btn-outline" onclick="document.getElementById('jobModal').style.display='none'">取消</button></div></div>
+<div class="modal-overlay" id="loanModal" style="display:none;"><div class="modal"><h2>🏦 贷款</h2><div id="loanListContainer"></div><button class="btn-outline" onclick="document.getElementById('loanModal').style.display='none'">取消</button></div></div>
+<div class="modal-overlay" id="leverageModal" style="display:none;"><div class="modal"><h2>📈 杠杆融资</h2><div id="leverageContainer"></div><button class="btn-outline" onclick="document.getElementById('leverageModal').style.display='none'">取消</button></div></div>
+<!-- 随机事件弹窗 -->
+<div class="modal-overlay" id="eventModal" style="display:none;"><div class="modal" style="text-align:left;"><h2 id="eventTitle" style="text-align:center;"></h2><p id="eventDesc"></p><div id="eventOptions" style="display:flex; flex-direction:column; gap:6px; margin-top:10px;"></div></div></div>
+<!-- 人脉互动弹窗 -->
+<div class="modal-overlay" id="networkModal" style="display:none;"><div class="modal"><h3 id="networkCharName"></h3><p id="networkCharRole"></p><div id="networkActions" style="display:flex; flex-direction:column; gap:6px;"></div><button class="btn-outline btn-sm" onclick="document.getElementById('networkModal').style.display='none'" style="margin-top:10px;">关闭</button></div></div>
+
+<script>
+    const TARGET = 100_000_000;
+    const INITIAL_CASH = 100_000;
+    const MAX_STAMINA = 100;
+    let gs = {
+        day:0,cash:INITIAL_CASH,mood:60,stamina:MAX_STAMINA,credit:100,skill:60,
+        holdings:{},assets:{},selectedAssetId:null,eventLog:[],
+        gameOver:false,winAchieved:false,
+        currentJob:null,daysWorkedInCycle:0,lastPayDay:0,
+        loan:null,leverage:null,lastDonationDay:-1,lastLotteryDay:-1,
+        ownedItems:[],unlockedAchievements:new Set(),credit100Days:0,
+        overtimeUsed:false,leaveEarlyUsed:false,
+        properties:{},lastMilestone:0,consecutiveProfitDays:0,lastTotalAsset:INITIAL_CASH,
+        autoInvest:{enabled:false,fundId:'fund_steady',amount:1000},
+        lotteryNoCooldown:false,redeemedCodes:new Set(),
+        recommendedStock:null,
+        // 人脉系统
+        network:{colleagues:[], leader:null, boss:null},
+        lastEventDay: -Infinity, // 上次随机事件天数
+        bossBuff: false // 老板永久折扣
+    };
+    const JOB_DEFS = [
+        {id:'rider',name:'外卖骑手',icon:'🛵',salary:3000,reqCash:0,reqAsset:0,reqCredit:50,reqSkill:0},
+        {id:'clerk',name:'便利店店员',icon:'🏪',salary:4000,reqCash:2000,reqAsset:50000,reqCredit:70,reqSkill:0},
+        {id:'office',name:'公司文员',icon:'💻',salary:6000,reqCash:50000,reqAsset:100000,reqCredit:80,reqSkill:70},
+        {id:'coder',name:'程序员',icon:'⌨️',salary:50000,reqCash:500000,reqAsset:3000000,reqCredit:80,reqSkill:90},
+        {id:'fundmgr',name:'基金经理',icon:'📈',salary:500000,reqCash:3000000,reqAsset:10000000,reqCredit:95,reqSkill:100},
+    ];
+    const LOAN_PRODUCTS = [
+        {id:'small',name:'小额贷',amount:5000,rate:0.0005,minCredit:60},
+        {id:'medium',name:'中额贷',amount:20000,rate:0.0008,minCredit:70},
+        {id:'large',name:'大额贷',amount:50000,rate:0.001,minCredit:80},
+    ];
+    const assetDefs = [
+        {id:'xingchen',name:'星辰科技',cat:'stock',initPrice:85,vol:0.04,icon:'⭐',risk:'high'},
+        {id:'yundun',name:'云盾网络',cat:'stock',initPrice:156,vol:0.035,icon:'🛡️',risk:'mid'},
+        {id:'lvyuan',name:'绿源能源',cat:'stock',initPrice:42,vol:0.03,icon:'🌿',risk:'mid'},
+        {id:'tiangong',name:'天工智能',cat:'stock',initPrice:268,vol:0.045,icon:'🤖',risk:'high'},
+        {id:'bihai',name:'碧海生物',cat:'stock',initPrice:73,vol:0.028,icon:'🧬',risk:'low'},
+        {id:'longteng',name:'龙腾芯片',cat:'stock',initPrice:195,vol:0.042,icon:'💾',risk:'high'},
+        {id:'yuanhang',name:'远航重工',cat:'stock',initPrice:28,vol:0.02,icon:'🚢',risk:'low'},
+        {id:'jinsui',name:'金穗农业',cat:'stock',initPrice:15,vol:0.018,icon:'🌾',risk:'low'},
+        {id:'feiyu',name:'飞宇航空',cat:'stock',initPrice:62,vol:0.032,icon:'✈️',risk:'mid'},
+        {id:'jiguang',name:'极光传媒',cat:'stock',initPrice:38,vol:0.026,icon:'📺',risk:'mid'},
+        {id:'fund_steady',name:'稳健增长基金',cat:'fund',initPrice:1.8,vol:0.008,icon:'🛡️',risk:'low'},
+        {id:'fund_tech',name:'科技创新基金',cat:'fund',initPrice:2.3,vol:0.015,icon:'🚀',risk:'mid'},
+        {id:'fund_dividend',name:'红利优选基金',cat:'fund',initPrice:1.2,vol:0.006,icon:'💎',risk:'low'},
+        {id:'fund_global',name:'环球配置基金',cat:'fund',initPrice:3.5,vol:0.01,icon:'🌍',risk:'low'},
+        {id:'gold',name:'黄金',cat:'metal',initPrice:480,vol:0.01,icon:'🥇',risk:'low'},
+        {id:'silver',name:'白银',cat:'metal',initPrice:28,vol:0.02,icon:'🥈',risk:'mid'},
+        {id:'copper',name:'铜',cat:'metal',initPrice:68,vol:0.018,icon:'🟤',risk:'mid'},
+        {id:'rareearth',name:'稀土',cat:'metal',initPrice:320,vol:0.035,icon:'🔮',risk:'high'},
+        {id:'lithium',name:'锂矿',cat:'metal',initPrice:185,vol:0.04,icon:'⚡',risk:'high'},
+    ];
+    const PROPERTY_DEFS = [
+        {id:'apt1',name:'小公寓',price:500000,rent:2000,icon:'🏢'},
+        {id:'house1',name:'普通住宅',price:2000000,rent:8000,icon:'🏡'},
+        {id:'villa',name:'豪华别墅',price:10000000,rent:40000,icon:'🏰'},
+    ];
+    const SHOP_ITEMS = [
+        {type:'watch',name:'劳力士',price:100000,icon:'⌚'},{type:'watch',name:'百达翡丽',price:50000000,icon:'⌚'},
+        {type:'watch',name:'天梭',price:10000,icon:'⌚'},{type:'watch',name:'朗格',price:500000,icon:'⌚'},
+        {type:'watch',name:'江诗丹顿',price:2000000,icon:'⌚'},{type:'car',name:'奔驰',price:500000,icon:'🚗'},
+        {type:'car',name:'宝马',price:1000000,icon:'🚗'},{type:'car',name:'兰博基尼',price:40000000,icon:'🏎️'},
+        {type:'car',name:'柯尼塞格',price:100000000,icon:'🏎️'},
+    ];
+    const ACHIEVEMENTS = [
+        {id:'watch10b',name:'寰宇名表典藏家',desc:'手表总价值超5亿',check:(gs)=>gs.ownedItems.filter(i=>i.type==='watch').reduce((s,i)=>s+i.price,0)>5e8},
+        {id:'car5b',name:'豪车满贯',desc:'汽车总价值超5亿',check:(gs)=>gs.ownedItems.filter(i=>i.type==='car').reduce((s,i)=>s+i.price,0)>5e8},
+        {id:'mood666',name:'风华正茂',desc:'心情≥666',check:(gs)=>gs.mood>=666},
+        {id:'credit365',name:'盛名皆凭信誉来',desc:'诚信100持续365天',check:(gs)=>gs.credit100Days>=365},
+        {id:'rich100b',name:'富可敌国',desc:'总资产>1000亿',check:(gs)=>totalAsset()>1e11},
+    ];
+    const MILESTONES = [100000,500000,1000000,5000000,20000000,50000000];
+
+    // ---------- 随机事件库 ----------
+    const RANDOM_EVENTS = [
+        { title:'👛 捡到钱包', desc:'你捡到一个钱包，里面有不少现金和证件。', options:[
+            {text:'归还失主', action:(gs)=>{ gs.credit+=3; gs.mood+=2; showToast('诚信+3 心情+2'); }},
+            {text:'私吞', action:(gs)=>{
+                if(Math.random()<0.3){ let cash=randInt(2000,10000); gs.cash+=cash; gs.mood+=5; showToast(`未被发现！获得¥${cash} 心情+5`); }
+                else { gs.credit-=5; gs.mood-=5; showToast('被追回！诚信-5 心情-5'); }
+            }}
+        ]},
+        { title:'💼 投资邀请', desc:'同事邀你一起炒币，需要投入5000元。', options:[
+            {text:'婉拒', action:(gs)=>{ showToast('安全第一'); }},
+            {text:'参加', action:(gs)=>{
+                if(gs.cash<5000){ showToast('现金不足','err'); return; }
+                gs.cash-=5000;
+                if(Math.random()<0.5){ let earn=randInt(10000,20000); gs.cash+=earn; gs.mood+=8; showToast(`翻倍！+¥${earn}`); }
+                else { gs.mood-=5; showToast('全部亏损，心情-5'); }
+            }}
+        ]},
+        { title:'📉 内幕消息', desc:'神秘短信暗示某科技股明天将大涨。', options:[
+            {text:'不信', action:(gs)=>{ showToast('无视'); }},
+            {text:'相信并买入', action:(gs)=>{
+                let stocks = assetDefs.filter(d=>d.cat==='stock').map(d=>d.id);
+                let pick = stocks[randInt(0,stocks.length-1)];
+                gs.recommendedStock = pick;
+                showToast(`关注 ${gs.assets[pick].name}`);
+            }}
+        ]},
+        { title:'🎓 培训机会', desc:'公司提供免费技能培训，但需消耗体力。', options:[
+            {text:'参加 (体力-20)', action:(gs)=>{
+                if(gs.stamina<20){ showToast('体力不足','err'); return; }
+                gs.stamina-=20; gs.skill+=3; showToast('技能+3');
+            }},
+            {text:'不去', action:(gs)=>{ showToast('休息一下'); }}
+        ]},
+        { title:'🏥 家人求助', desc:'家人急需医疗费5000元。', options:[
+            {text:'汇款', action:(gs)=>{
+                if(gs.cash<5000){ showToast('现金不足','err'); return; }
+                gs.cash-=5000; gs.credit+=2; gs.mood+=3; showToast('家人感激，诚信+2');
+            }},
+            {text:'拒绝', action:(gs)=>{ gs.credit-=3; gs.mood-=5; showToast('内心不安，诚信-3 心情-5'); }}
+        ]}
+    ];
+
+    function randGauss(m=0,s=1){let u=1-Math.random(),v=1-Math.random();return m+Math.sqrt(-2*Math.log(u+0.0001))*Math.cos(2*Math.PI*v)*s;}
+    function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+    function randFloat(a,b){return Math.random()*(b-a)+a;}
+    function price(id){return gs.assets[id]?.currentPrice??0;}
+    function totalAsset(){
+        let t = gs.cash;
+        for(let[k,v] of Object.entries(gs.holdings)){
+            let p = price(k);
+            if(isNaN(p) || !isFinite(p)) continue;
+            t += v.qty * p;
+        }
+        for(let k in gs.properties) t += gs.properties[k].price;
+        return isFinite(t) ? t : gs.lastTotalAsset || INITIAL_CASH;
+    }
+    function holdingVal(){
+        let t=0;
+        for(let[k,v] of Object.entries(gs.holdings)){
+            let p = price(k);
+            if(isNaN(p) || !isFinite(p)) continue;
+            t += v.qty * p;
+        }
+        return isFinite(t) ? t : 0;
+    }
+
+    function initAssets(){assetDefs.forEach(d=>{let ohlc=[],close=d.initPrice;for(let i=0;i<100;i++){let open=close;let change=Math.exp(randGauss(0,d.vol*0.8));close=Math.max(0.01,close*change);if(isNaN(close)||!isFinite(close))close=open;let high=close*(1+Math.abs(randGauss(0,d.vol*0.3))),low=close*(1-Math.abs(randGauss(0,d.vol*0.3)));ohlc.push({open,high,low,close,volume:randInt(5000,50000)});}gs.assets[d.id]={...d,ohlc,currentPrice:close};});}
+
+    // 生成人脉
+    function generateNetwork(jobId){
+        const names = ['张伟','王芳','李娜','刘洋','陈静','赵磊','周涛','吴婷'];
+        gs.network = {colleagues:[], leader:null, boss:null};
+        // 根据职位生成同事数量
+        let num = jobId==='rider'?2:jobId==='clerk'?3:jobId==='office'?4:jobId==='coder'?5:6;
+        for(let i=0;i<num;i++) gs.network.colleagues.push({name:names[randInt(0,names.length-1)]+i, affection:60});
+        gs.network.leader = {name:'主管·王', affection:60};
+        gs.network.boss = {name:'老板·张总', affection:60};
+    }
+
+    function advanceDay(){
+        if(gs.gameOver && !gs.winAchieved) return;
+        if(gs.winAchieved) gs.gameOver = false;
+        gs.day++;gs.stamina=MAX_STAMINA;gs.overtimeUsed=gs.leaveEarlyUsed=false;
+        if(gs.credit===100)gs.credit100Days++;else gs.credit100Days=0;
+        let events=[];
+
+        // 工作消耗
+        if(gs.currentJob&&gs.stamina>=20){gs.stamina-=20;gs.daysWorkedInCycle++;gs.mood-=3;events.push({text:`💼 打工：${gs.currentJob.name}`});}
+
+        // 资产价格更新
+        for(let[id,asset]of Object.entries(gs.assets)){
+            let last=asset.ohlc[asset.ohlc.length-1],open=last.close;
+            let volMod=asset.vol*(1-Math.min(5,(gs.skill-60)*0.1)/100);
+            let change=Math.exp(randGauss(0,volMod*0.8));
+            let close=Math.max(0.01,open*change);
+            if(isNaN(close)||!isFinite(close))close=open;
+            if(gs.recommendedStock===id){
+                close=close*(1+randFloat(0.05,0.15));
+                if(isNaN(close))close=open;
+            }
+            if(close>open*1.1)close=open*1.1;if(close<open*0.9)close=open*0.9;
+            let high=close*(1+Math.abs(randGauss(0,volMod*0.3))),low=close*(1-Math.abs(randGauss(0,volMod*0.3)));
+            asset.ohlc.push({open,high,low,close,volume:randInt(5000,50000)});
+            if(asset.ohlc.length>300)asset.ohlc.shift();
+            asset.currentPrice=close;
+        }
+        gs.recommendedStock=null;
+
+        // 房产租金
+        for(let[id,p]of Object.entries(gs.properties)){let def=PROPERTY_DEFS.find(d=>d.id===id);if(def){gs.cash+=def.rent;events.push({text:`🏠 ${def.name} 租金 +¥${def.rent}`});}}
+        // 定投
+        if(gs.autoInvest.enabled){let fund=gs.assets[gs.autoInvest.fundId];if(fund&&gs.cash>=gs.autoInvest.amount){let qty=Math.floor(gs.autoInvest.amount/fund.currentPrice);if(qty>0){buyAsset(gs.autoInvest.fundId,qty);events.push({text:`📊 定投 ${fund.name} ×${qty}`});}}}
+        let cost=randInt(50,200);gs.cash-=cost;events.push({text:`🧾 生活开支 ¥${cost}`});
+        if(gs.loan){let int=Math.round(gs.loan.amount*gs.loan.rate);gs.cash-=int;gs.loan.days++;}
+        if(gs.leverage){let int=Math.round(gs.leverage.amount*0.002);gs.cash-=int;}
+        if(Math.random()<0.22){let chg=randInt(200,3000);gs.cash+=chg;events.push({text:`🍀 +¥${chg}`});}
+        if(gs.day-gs.lastPayDay>=30&&gs.currentJob){
+            let pay = Math.round(gs.currentJob.salary*(gs.daysWorkedInCycle/30));
+            if(gs.bossBuff) pay = Math.round(pay * 1.2); // 老板buff加薪
+            gs.cash+=pay;gs.mood+=5;gs.lastPayDay=gs.day;gs.daysWorkedInCycle=0;
+            events.push({text:`💵 发薪 ¥${pay}`});
+        }
+
+        // 老板辞退检查
+        if(gs.currentJob && gs.network.boss && gs.network.boss.affection < 40 && Math.random() < 0.8){
+            events.push({text:'💼 老板对你不满，你被辞退了！'});
+            quitJob(true);
+        }
+
+        let ta=totalAsset();
+        if(isNaN(ta)){gs.cash=INITIAL_CASH;gs.holdings={};gs.properties={};ta=gs.cash;}
+        if(ta>gs.lastTotalAsset)gs.consecutiveProfitDays++;else gs.consecutiveProfitDays=0;
+        if(gs.consecutiveProfitDays>=5){gs.mood+=10;gs.cash+=1000;events.push({text:'📈 连续5日盈利！+1000 心情+10'});gs.consecutiveProfitDays=0;}
+        gs.lastTotalAsset=ta;
+        for(let m of MILESTONES){if(ta>=m&&gs.lastMilestone<m){gs.cash+=Math.round(ta*0.05);gs.lastMilestone=m;events.push({text:`🎯 里程碑！资产达${m.toLocaleString()} 奖金5%`});break;}}
+        events.forEach(e=>gs.eventLog.unshift({day:gs.day,text:e.text}));
+
+        // 随机事件触发 (4~20天间隔)
+        if(gs.day - gs.lastEventDay >= randInt(4,20)){
+            triggerRandomEvent();
+            gs.lastEventDay = gs.day;
+        }
+
+        if(gs.mood<0){endGame('心情崩溃');return;}if(gs.cash<-1000){endGame('破产');return;}if(gs.credit<0){endGame('诚信归零');return;}
+        if(ta>=TARGET&&!gs.winAchieved){gs.winAchieved=true;gs.gameOver=true;showWinModal();}
+        checkAchievements();refreshUI();
+    }
+
+    function triggerRandomEvent(){
+        let ev = RANDOM_EVENTS[randInt(0, RANDOM_EVENTS.length-1)];
+        document.getElementById('eventTitle').textContent = ev.title;
+        document.getElementById('eventDesc').textContent = ev.desc;
+        let optDiv = document.getElementById('eventOptions');
+        optDiv.innerHTML = '';
+        ev.options.forEach((opt,idx)=>{
+            let btn = document.createElement('button');
+            btn.className = 'btn btn-outline';
+            btn.textContent = opt.text;
+            btn.addEventListener('click', ()=>{
+                opt.action(gs);
+                gs.eventLog.unshift({day:gs.day, text:`📌 随机事件: ${ev.title} - ${opt.text}`});
+                document.getElementById('eventModal').style.display='none';
+                refreshUI();
+            });
+            optDiv.appendChild(btn);
+        });
+        document.getElementById('eventModal').style.display='flex';
+    }
+
+    function endGame(r){gs.gameOver=true;document.getElementById('goReason').textContent=r;document.getElementById('gameOverModal').style.display='flex';}
+    function showWinModal(){document.getElementById('winModal').style.display='flex';}
+    function continuePlaying(){gs.gameOver=false;document.getElementById('winModal').style.display='none';refreshUI();}
+    function restartGame(){
+        gs={day:0,cash:INITIAL_CASH,mood:60,stamina:MAX_STAMINA,credit:100,skill:60,holdings:{},assets:{},selectedAssetId:null,eventLog:[],gameOver:false,winAchieved:false,currentJob:null,daysWorkedInCycle:0,lastPayDay:0,loan:null,leverage:null,lastDonationDay:-1,lastLotteryDay:-1,ownedItems:[],unlockedAchievements:new Set(),credit100Days:0,overtimeUsed:false,leaveEarlyUsed:false,properties:{},lastMilestone:0,consecutiveProfitDays:0,lastTotalAsset:INITIAL_CASH,autoInvest:{enabled:false,fundId:'fund_steady',amount:1000},lotteryNoCooldown:false,redeemedCodes:new Set(),recommendedStock:null,network:{colleagues:[],leader:null,boss:null},lastEventDay:-Infinity,bossBuff:false};
+        initAssets();refreshUI();switchView('trade');
+    }
+
+    function buyAsset(id,qty){
+        if(gs.gameOver||qty<=0)return false;
+        let p=price(id);
+        if(isNaN(p)||!isFinite(p))return false;
+        let cost=p*qty;
+        if(cost>gs.cash){showToast('当前现金不足无法购买','err');return false;}
+        gs.cash-=cost;
+        if(!gs.holdings[id])gs.holdings[id]={qty:0,totalCost:0};
+        gs.holdings[id].qty+=qty;
+        gs.holdings[id].totalCost+=cost;
+        if(isNaN(gs.holdings[id].totalCost))gs.holdings[id].totalCost=cost;
+        showToast(`购买成功，已买入 ${gs.assets[id].name} ×${qty}`);
+        return true;
+    }
+    function sellAsset(id,qty){
+        let h=gs.holdings[id];
+        if(!h||qty>h.qty){showToast('持仓不足','err');return false;}
+        let p=price(id);
+        if(isNaN(p))return false;
+        let rev=p*qty;
+        let avg=h.totalCost/h.qty;
+        if(isNaN(avg)||!isFinite(avg))avg=p;
+        h.totalCost-=avg*qty;
+        h.qty-=qty;
+        if(h.qty<=0)delete gs.holdings[id];
+        gs.cash+=rev;
+        showToast(`卖出成功，已卖出 ${gs.assets[id].name} ×${qty}`);
+        return true;
+    }
+
+    function buyProperty(pid){
+        let def=PROPERTY_DEFS.find(p=>p.id===pid);
+        let price = gs.bossBuff ? Math.round(def.price*0.8) : def.price;
+        if(!def||gs.cash<price){showToast('当前现金不足无法购买','err');return;}
+        if(gs.properties[pid])return;
+        gs.cash-=price;
+        gs.properties[pid]={name:def.name,price:price};
+        showToast(`购买成功，已买入 ${def.icon}${def.name}`);
+        refreshUI();
+    }
+    function learn(){if(gs.stamina<30)return showToast('体力不足','err');gs.stamina-=30;gs.skill+=2;refreshUI();}
+    function donate(){if(gs.lastDonationDay===gs.day)return;if(gs.cash<1000){showToast('当前现金不足无法购买','err');return;}gs.cash-=1000;gs.credit=Math.min(100,gs.credit+1);gs.lastDonationDay=gs.day;refreshUI();}
+    function volunteer(){if(gs.stamina<40)return showToast('体力不足','err');gs.stamina-=40;gs.credit=Math.min(100,gs.credit+3);refreshUI();}
+    function buyLottery(){
+        if(!gs.lotteryNoCooldown){
+            let cd=7-(gs.day-gs.lastLotteryDay);
+            if(cd>0){showToast(`彩票冷却中，还需${cd}天`,'err');return;}
+        }
+        let cost = gs.bossBuff ? 1600 : 2000;
+        if(gs.cash<cost){showToast('当前现金不足无法购买','err');return;}
+        gs.cash-=cost;gs.lastLotteryDay=gs.day;
+        showToast('🎫 已购买彩票');
+        let r=Math.random(),prize=0;
+        if(r<0.4)prize=500;else if(r<0.55)prize=1000;else if(r<0.65)prize=2000;else if(r<0.66)prize=10000;else if(r<0.665)prize=100000;else if(r<0.66501)prize=1000000;else if(r<0.6650100000000001)prize=100000000;
+        if(prize>0)gs.cash+=prize;
+        gs.eventLog.unshift({day:gs.day,text:prize>0?`🎫 中奖 ¥${prize}`:'🎫 未中奖'});
+        refreshUI();
+    }
+    function buyShopItem(item){
+        let price = gs.bossBuff ? Math.round(item.price*0.8) : item.price;
+        if(gs.cash<price){showToast('当前现金不足无法购买','err');return;}
+        gs.cash-=price;
+        gs.ownedItems.push(item);
+        gs.mood+=50;
+        showToast(`购买成功，已买入 ${item.icon}${item.name}`);
+        refreshUI();
+    }
+
+    function openAssetDetail(){
+        let watchTotal=gs.ownedItems.filter(i=>i.type==='watch').reduce((s,i)=>s+i.price,0);
+        let carTotal=gs.ownedItems.filter(i=>i.type==='car').reduce((s,i)=>s+i.price,0);
+        let propertyTotal=Object.values(gs.properties).reduce((s,p)=>s+p.price,0);
+        let html=`<p><strong>💰 现金：</strong>¥${gs.cash.toLocaleString()}</p>`;
+        html+=`<p><strong>📦 持仓市值：</strong>¥${holdingVal().toLocaleString()}</p>`;
+        html+=`<p><strong>🏠 房产：</strong>${Object.keys(gs.properties).length}套 (总价值 ¥${propertyTotal.toLocaleString()})</p>`;
+        html+=`<p><strong>🚗 车辆：</strong>${gs.ownedItems.filter(i=>i.type==='car').length}辆 (总价值 ¥${carTotal.toLocaleString()})</p>`;
+        html+=`<p><strong>⌚ 名表：</strong>${gs.ownedItems.filter(i=>i.type==='watch').length}块 (总价值 ¥${watchTotal.toLocaleString()})</p>`;
+        html+=`<p><strong>💼 工作：</strong>${gs.currentJob?gs.currentJob.name:'无'}</p>`;
+        if(gs.bossBuff) html+=`<p style="color:gold;">👑 老板赏识：工资+20%，购物8折</p>`;
+        document.getElementById('assetDetailContent').innerHTML=html;
+        document.getElementById('assetDetailModal').style.display='flex';
+    }
+    function openRedeemModal(){document.getElementById('redeemModal').style.display='flex';}
+    function redeemCode(){
+        let input=document.getElementById('redeemInput').value.trim();
+        let msgDiv=document.getElementById('redeemMsg');
+        if(gs.redeemedCodes.has(input)){msgDiv.textContent='该兑换码已使用';return;}
+        if(input==='xiaoxiannb'){gs.cash+=100100000000;gs.redeemedCodes.add(input);msgDiv.textContent='已成功兑换：1001亿元';}
+        else if(input==='xiaoxian666'){gs.mood=667;gs.skill=150;gs.redeemedCodes.add(input);msgDiv.textContent='已成功兑换：心情667 技能150';}
+        else if(input==='xxstc'){gs.lotteryNoCooldown=true;gs.redeemedCodes.add(input);msgDiv.textContent='已成功兑换：彩票无冷却';}
+        else{msgDiv.textContent='无效兑换码';}
+        refreshUI();
+    }
+
+    function openLeverageModal(){
+        if(gs.credit100Days<30){showToast('需诚信100持续30天','err');return;}
+        if(gs.leverage){showToast('已有杠杆借款','err');return;}
+        let mv=holdingVal();
+        if(mv<=0){showToast('无持仓可抵押','err');return;}
+        let html=`<button onclick="takeLeverage(${Math.floor(mv*0.5)})">借 ¥${Math.floor(mv*0.5)} (市值50%)</button>`;
+        document.getElementById('leverageContainer').innerHTML=html;
+        document.getElementById('leverageModal').style.display='flex';
+    }
+    function takeLeverage(amt){if(gs.leverage)return;gs.leverage={amount:amt};gs.cash+=amt;document.getElementById('leverageModal').style.display='none';refreshUI();}
+
+    function refreshUI(){
+        let ta=totalAsset();
+        if(isNaN(ta))ta=gs.lastTotalAsset||INITIAL_CASH;
+        document.getElementById('topTotalAsset').textContent=ta.toLocaleString();
+        document.getElementById('topCash').textContent=gs.cash.toLocaleString();
+        document.getElementById('topMood').textContent=gs.mood;
+        document.getElementById('topStamina').textContent=gs.stamina+'/'+MAX_STAMINA;
+        document.getElementById('topCredit').textContent=gs.credit;
+        document.getElementById('topSkill').textContent=gs.skill;
+        document.getElementById('topProgress').style.width=Math.min(100,(ta/TARGET)*100).toFixed(1)+'%';
+        document.getElementById('topProgressPct').textContent=Math.min(100,(ta/TARGET)*100).toFixed(2)+'%';
+        renderMarket();renderHoldings();renderProperties();renderActivities();renderEvents();renderAchievements();renderMilestones();
+        renderNetwork();
+        updateTradeInfo();updateJobLoanUI();
+        if(gs.selectedAssetId)drawChart(gs.selectedAssetId);
+        else document.getElementById('chartPanel').style.display='none';
+    }
+
+    // 人脉渲染
+    function renderNetwork(){
+        let container = document.getElementById('networkList');
+        let title = document.getElementById('networkTitle');
+        if(!gs.currentJob || !gs.network.leader){
+            title.style.display='none';
+            container.innerHTML='';
+            return;
+        }
+        title.style.display='block';
+        let html='';
+        if(gs.network.leader){
+            html+=`<div class="network-card"><span>👔 ${gs.network.leader.name} (领导)</span><span>❤️${gs.network.leader.affection}</span><button class="btn btn-sm btn-outline" onclick="openNetworkInteract('leader')">互动</button></div>`;
+        }
+        gs.network.colleagues.forEach((c,i)=>{
+            html+=`<div class="network-card"><span>🧑 ${c.name} (同事)</span><span>❤️${c.affection}</span><button class="btn btn-sm btn-outline" onclick="openNetworkInteract('colleague',${i})">互动</button></div>`;
+        });
+        if(gs.network.boss){
+            html+=`<div class="network-card"><span>👑 ${gs.network.boss.name} (老板)</span><span>❤️${gs.network.boss.affection}</span><button class="btn btn-sm btn-outline" onclick="openNetworkInteract('boss')">互动</button></div>`;
+        }
+        container.innerHTML=html;
+    }
+
+    function openNetworkInteract(type, idx=null){
+        let modal = document.getElementById('networkModal');
+        let charName, charRole, actions=[];
+        if(type==='leader'){
+            charName = gs.network.leader.name; charRole='领导';
+            actions = [
+                {text:'💬 聊天 (5体力)', act:()=>networkChat('leader')},
+                {text:'🎉 约出去玩 (10体力 ¥1000)', act:()=>networkPlay('leader')},
+                {text:'🎁 送礼 ¥10000', act:()=>networkGift('leader')}
+            ];
+        }else if(type==='colleague'){
+            let c = gs.network.colleagues[idx];
+            charName = c.name; charRole='同事';
+            actions = [
+                {text:'💬 聊天 (5体力)', act:()=>networkChat('colleague',idx)},
+                {text:'🎉 约出去玩 (10体力 ¥500)', act:()=>networkPlay('colleague',idx)},
+                {text:'🎁 送礼 ¥3000', act:()=>networkGift('colleague',idx)}
+            ];
+        }else if(type==='boss'){
+            charName = gs.network.boss.name; charRole='老板';
+            actions = [
+                {text:'🎁 送礼 ¥20000', act:()=>networkGift('boss')}
+            ];
+        }
+        document.getElementById('networkCharName').textContent = charName;
+        document.getElementById('networkCharRole').textContent = charRole;
+        let actDiv = document.getElementById('networkActions');
+        actDiv.innerHTML = '';
+        actions.forEach(a=>{
+            let btn = document.createElement('button');
+            btn.className = 'btn btn-outline';
+            btn.textContent = a.text;
+            btn.addEventListener('click', ()=>{
+                a.act();
+                document.getElementById('networkModal').style.display='none';
+                refreshUI();
+            });
+            actDiv.appendChild(btn);
+        });
+        modal.style.display='flex';
+    }
+
+    function networkChat(who, idx=null){
+        if(gs.stamina<5){showToast('体力不足','err');return;}
+        gs.stamina-=5;
+        let target = who==='leader'?gs.network.leader:gs.network.colleagues[idx];
+        if(Math.random()<0.3){ target.affection = Math.max(0, target.affection-1); showToast('互动太频繁，好感-1'); return; }
+        if(Math.random()<0.7){ target.affection = Math.min(100, target.affection+1); showToast('好感+1'); }
+        else showToast('没什么变化');
+        if(who==='leader' && Math.random()<0.4){
+            gs.mood-=3; showToast('领导让你滚去上班，心情-3');
+        }
+    }
+    function networkPlay(who, idx=null){
+        let cost = who==='leader'?1000:500;
+        if(gs.stamina<10){showToast('体力不足','err');return;}
+        if(gs.cash<cost){showToast('现金不足','err');return;}
+        gs.stamina-=10; gs.cash-=cost;
+        let target = who==='leader'?gs.network.leader:gs.network.colleagues[idx];
+        if(Math.random()<0.3){ target.affection = Math.max(0, target.affection-1); showToast('互动太频繁，好感-1'); return; }
+        let r=Math.random();
+        if(who==='leader'){
+            if(r<0.3) { target.affection = Math.min(100, target.affection+2); showToast('好感+2'); }
+            else if(r<0.9) { target.affection = Math.min(100, target.affection+1); showToast('好感+1'); }
+            else showToast('没什么变化');
+        }else{
+            if(r<0.6) { target.affection = Math.min(100, target.affection+2); showToast('好感+2'); }
+            else if(r<0.9) { target.affection = Math.min(100, target.affection+1); showToast('好感+1'); }
+            else showToast('没什么变化');
+        }
+    }
+    function networkGift(who, idx=null){
+        let cost = who==='leader'?10000:(who==='boss'?20000:3000);
+        if(gs.cash<cost){showToast('现金不足','err');return;}
+        gs.cash-=cost;
+        let target = who==='leader'?gs.network.leader:(who==='boss'?gs.network.boss:gs.network.colleagues[idx]);
+        if(Math.random()<0.3){ target.affection = Math.max(0, target.affection-1); showToast('互动太频繁，好感-1'); return; }
+        let r=Math.random();
+        if(who==='leader'){
+            if(r<0.5) { target.affection = Math.min(100, target.affection+2); showToast('好感+2'); }
+            else if(r<0.95) { target.affection = Math.min(100, target.affection+1); showToast('好感+1'); }
+            else { target.affection = Math.min(100, target.affection+3); showToast('好感+3！'); }
+        }else if(who==='boss'){
+            if(r<0.8) { target.affection = Math.min(100, target.affection+1); showToast('好感+1'); }
+            else { target.affection = Math.min(100, target.affection+1); showToast('好感+1'); } // 实际80%+1,20%也+1？要求80%+1,20%+1 其实一样，我们改成80%+1,20%+2更合理
+            if(r>=0.8) { target.affection = Math.min(100, target.affection+1); showToast('老板大悦，好感+2'); }
+        }else{
+            if(r<0.7) { target.affection = Math.min(100, target.affection+2); showToast('好感+2'); }
+            else if(r<0.9) { target.affection = Math.min(100, target.affection+1); showToast('好感+1'); }
+            else { target.affection = Math.min(100, target.affection+3); showToast('好感+3！'); }
+        }
+        // 检查老板好感>95获得永久buff
+        if(who==='boss' && target.affection > 95 && !gs.bossBuff){
+            gs.bossBuff = true;
+            showToast('👑 获得老板赏识永久buff！工资+20%，购物8折');
+        }
+    }
+
+    function doOvertime(){
+        if(!gs.currentJob||gs.overtimeUsed||gs.stamina<30)return;
+        gs.stamina-=30;gs.mood-=10;gs.cash+=100;gs.overtimeUsed=true;
+        if(gs.network.boss && Math.random()<0.05){
+            gs.network.boss.affection = Math.min(100, gs.network.boss.affection+1);
+            showToast('加班被老板看见，好感+1');
+            if(gs.network.boss.affection>95 && !gs.bossBuff){ gs.bossBuff=true; showToast('👑 老板赏识永久buff！'); }
+        }
+        refreshUI();
+    }
+
+    function doLeaveEarly(){
+        if(!gs.currentJob||gs.leaveEarlyUsed)return;
+        gs.leaveEarlyUsed=true;
+        let baseSuccess = 0.645;
+        // 根据人脉调整
+        let leaderAff = gs.network.leader?gs.network.leader.affection:60;
+        let colleagueAvg = gs.network.colleagues.length>0 ? gs.network.colleagues.reduce((s,c)=>s+c.affection,0)/gs.network.colleagues.length : 60;
+        let successRate = baseSuccess;
+        if(leaderAff < 60 || colleagueAvg < 60){
+            successRate = 0.5; // 降低成功率
+        }
+        if(leaderAff > 85 && colleagueAvg > 85){
+            successRate = 1 - (0.005+0.05+0.1); // 老板0.5%,领导5%,举报10% 剩余84.5%成功
+        }
+        let r=Math.random();
+        if(gs.network.boss && r<0.005){ // 老板抓到
+            gs.cash-=1000; gs.credit-=10; gs.currentJob=null; gs.daysWorkedInCycle=0; gs.lastPayDay=gs.day;
+            gs.eventLog.unshift({day:gs.day,text:'🏃 被老板发现！辞退+诚信-10'});
+        }else if(r<0.105){ // 同事举报
+            gs.cash-=1000; gs.credit-=5;
+            gs.eventLog.unshift({day:gs.day,text:'🏃 被同事举报，-1000诚信-5'});
+        }else if(r<0.355){ // 领导发现
+            if(leaderAff < 60 && Math.random()<0.3){ // 额外惩罚
+                gs.mood-=5; gs.stamina = Math.max(0, gs.stamina-20);
+                gs.eventLog.unshift({day:gs.day,text:'🏃 被领导骂并留下加班，心情-5体力-20'});
+            }else{
+                gs.cash-=1000; gs.credit-=5;
+                gs.eventLog.unshift({day:gs.day,text:'🏃 被领导发现，-1000诚信-5'});
+            }
+        }else{
+            gs.mood+=5;
+            gs.eventLog.unshift({day:gs.day,text:'🏃 提前下班成功，心情+5'});
+        }
+        refreshUI();
+        if(gs.credit<0)endGame('诚信归零');
+    }
+
+    function openJobModal(){let html='';JOB_DEFS.forEach((j,i)=>{let can=gs.cash>=j.reqCash&&totalAsset()>=j.reqAsset&&gs.credit>=j.reqCredit&&gs.skill>=j.reqSkill;html+=`<div style="margin:5px 0;"><strong>${j.icon} ${j.name}</strong> 月薪¥${j.salary}<br><small>💰≥${j.reqCash} 资产≥${j.reqAsset} 🤝≥${j.reqCredit} 🧠≥${j.reqSkill}</small><button class="btn btn-sm btn-outline" data-job-index="${i}" ${can?'':'disabled'}>${can?'应聘':'不满足'}</button></div>`;});document.getElementById('jobListContainer').innerHTML=html;document.getElementById('jobModal').style.display='flex';}
+    document.addEventListener('click',e=>{if(e.target.closest('#jobListContainer button[data-job-index]')){let i=parseInt(e.target.dataset.jobIndex);takeJob(JOB_DEFS[i]);}if(e.target.closest('#loanListContainer button[data-loan-id]')){takeLoan(e.target.dataset.loanId);}});
+    function takeJob(job){
+        if(gs.cash<job.reqCash||totalAsset()<job.reqAsset||gs.credit<job.reqCredit||gs.skill<job.reqSkill)return;
+        if(gs.currentJob) quitJob(true);
+        gs.currentJob={...job};
+        gs.daysWorkedInCycle=0; gs.lastPayDay=gs.day;
+        generateNetwork(job.id);
+        document.getElementById('jobModal').style.display='none';
+        refreshUI();
+    }
+    function quitJob(silent=false){
+        if(!gs.currentJob)return;
+        if(!silent){
+            let payout=Math.round(gs.currentJob.salary*(gs.daysWorkedInCycle/30)*0.9);
+            gs.cash+=payout;
+        }
+        gs.currentJob=null; gs.daysWorkedInCycle=0;
+        gs.network = {colleagues:[], leader:null, boss:null};
+        refreshUI();
+    }
+    function openLoanModal(){let html='';LOAN_PRODUCTS.forEach(l=>{let can=gs.credit>=l.minCredit&&!gs.loan;html+=`<div>${l.name} ¥${l.amount} <button data-loan-id="${l.id}" ${can?'':'disabled'}>申请</button></div>`;});document.getElementById('loanListContainer').innerHTML=html;document.getElementById('loanModal').style.display='flex';}
+    function takeLoan(pid){let p=LOAN_PRODUCTS.find(l=>l.id===pid);if(!p||gs.loan)return;gs.loan={amount:p.amount,rate:p.rate,days:0};gs.cash+=p.amount;document.getElementById('loanModal').style.display='none';refreshUI();}
+    function repayLoan(){if(!gs.loan||gs.cash<gs.loan.amount)return;gs.cash-=gs.loan.amount;gs.loan=null;refreshUI();}
+
+    function updateJobLoanUI(){
+        let jobCard=document.getElementById('jobInfoCard');let findBtn=document.getElementById('btnFindJob');let quitBtn=document.getElementById('btnQuitJob');let overtimeBtn=document.getElementById('btnOvertime');let leaveBtn=document.getElementById('btnLeaveEarly');
+        if(gs.currentJob){jobCard.innerHTML=`💼 ${gs.currentJob.icon} ${gs.currentJob.name} 月薪¥${gs.currentJob.salary} | 已工作${gs.daysWorkedInCycle}天`;findBtn.style.display='none';quitBtn.style.display='inline-block';overtimeBtn.style.display='inline-block';leaveBtn.style.display='inline-block';}else{jobCard.innerHTML='暂无工作';findBtn.style.display='inline-block';quitBtn.style.display='none';overtimeBtn.style.display='none';leaveBtn.style.display='none';}
+        document.getElementById('btnRepayLoan').style.display=gs.loan?'inline-block':'none';
+        document.getElementById('btnLeverage').style.display=(gs.credit100Days>=30)?'inline-block':'none';
+    }
+
+    // 原有渲染函数保持不变
+    function renderMarket(){
+        let html='';['stock','fund','metal'].forEach(cat=>{
+            html+=`<span class="cat-tag cat-${cat}">${cat==='stock'?'📈':cat==='fund'?'📊':'🪙'}</span>`;
+            assetDefs.filter(d=>d.cat===cat).forEach(d=>{
+                let a=gs.assets[d.id];if(!a)return;
+                let prev=a.ohlc.length>1?a.ohlc[a.ohlc.length-2].close:a.currentPrice;
+                let chg=((a.currentPrice-prev)/prev*100);
+                if(isNaN(chg))chg=0;
+                let cls=chg>0.03?'chg-up':(chg<-0.03?'chg-down':'chg-flat');
+                html+=`<div class="asset-row${gs.selectedAssetId===d.id?' selected':''}" onclick="selectAsset('${d.id}')">
+                    <div class="asset-left"><span class="a-icon icon-${cat}">${d.icon}</span><span>${d.name}</span></div>
+                    <div class="asset-right">
+                        <span class="risk-tag risk-${d.risk}">${d.risk==='low'?'低':d.risk==='mid'?'中':'高'}</span>
+                        <span>¥${a.currentPrice.toFixed(2)}</span>
+                        <span class="a-change ${cls}">${chg>=0?'+':''}${chg.toFixed(2)}%</span>
+                    </div>
+                </div>`;
+            });
+        });
+        document.getElementById('marketList').innerHTML=html;
+    }
+    function safePct(v,b){if(!b||b===0||isNaN(v)||isNaN(b))return'--';let p=((v-b)/b)*100;return isFinite(p)?(p>=0?'+':'')+p.toFixed(2)+'%':'--';}
+    function renderHoldings(){
+        let html='';
+        for(let[id,h]of Object.entries(gs.holdings)){
+            let a=gs.assets[id];if(!a)continue;
+            let cp=a.currentPrice;if(isNaN(cp))continue;
+            let avg=h.totalCost/h.qty;if(isNaN(avg))avg=cp;
+            let yc=a.ohlc.length>1?a.ohlc[a.ohlc.length-2].close:cp;
+            html+=`<div class="holding-card"><span>${a.icon} ${a.name} ×${h.qty}</span><span style="color:${cp>=avg?'var(--green)':'var(--red)'}">成本${safePct(cp,avg)}</span><span style="color:${cp>=yc?'var(--green)':'var(--red)'}">日${safePct(cp,yc)}</span><button class="btn btn-sm btn-outline" onclick="quickSell('${id}')">卖</button></div>`;
+        }
+        document.getElementById('holdingsList').innerHTML=html||'暂无持仓';
+    }
+    function renderProperties(){
+        let html='';PROPERTY_DEFS.forEach(p=>{if(gs.properties[p.id])html+=`<div>${p.icon} ${p.name} (已拥有)</div>`;else{let price = gs.bossBuff?Math.round(p.price*0.8):p.price;html+=`<button class="btn btn-sm btn-outline" onclick="buyProperty('${p.id}')">${p.icon} ${p.name} ¥${price.toLocaleString()}</button>`;}});
+        document.getElementById('propertyList').innerHTML=html||'暂无房产';
+    }
+    function renderActivities(){
+        let html='';
+        html+=`<button class="act-btn" onclick="doActivity('cheapfood')">🍜便宜美食 <small>💰1~100 ❤+2~5 ⚡20~40</small></button>`;
+        html+=`<button class="act-btn" onclick="doActivity('fancyfood')">🍽️精致大餐 <small>💰200~500 ❤+10 ⚡20~40</small></button>`;
+        html+=`<button class="act-btn" onclick="doActivity('gaming')">🎮打游戏 <small>💰0 ❤+5 ⚡10~20</small></button>`;
+        html+=`<button class="act-btn" onclick="doActivity('social')">🎉社交 <small>💰100~200 ❤?-4~+15 ⚡10~20</small></button>`;
+        html+=`<button class="act-btn" onclick="donate()">🎗️捐款1000 <small>诚信+1 (日限1次)</small></button>`;
+        html+=`<button class="act-btn" onclick="volunteer()">🧹劳动 <small>⚡40 诚信+3</small></button>`;
+        html+=`<button class="act-btn" onclick="learn()">📚学习 <small>⚡30 技能+2</small></button>`;
+        let lotteryCd = gs.lotteryNoCooldown?0:7-(gs.day-gs.lastLotteryDay);
+        html+=`<button class="act-btn" onclick="buyLottery()">🎰彩票 ¥${gs.bossBuff?1600:2000} <small>${lotteryCd>0?lotteryCd+'天后可买':'可购买'}</small></button>`;
+        html+=`<div class="section-title">🛍️购物</div>`;
+        SHOP_ITEMS.forEach(item=>{let price=gs.bossBuff?Math.round(item.price*0.8):item.price;html+=`<button class="act-btn" onclick="buyShopItem({type:'${item.type}',name:'${item.name}',price:${item.price},icon:'${item.icon}'})">${item.icon}${item.name} ¥${price.toLocaleString()}</button>`;});
+        html+=`<div class="section-title">📊定投</div><button class="act-btn" onclick="toggleAutoInvest()">${gs.autoInvest.enabled?'关闭定投 (每日1000)':'开启定投 (每日1000买入稳健基金)'}</button>`;
+        document.getElementById('activityList').innerHTML=html;
+    }
+    function toggleAutoInvest(){gs.autoInvest.enabled=!gs.autoInvest.enabled;refreshUI();}
+    function doActivity(type){
+        if(gs.gameOver)return;
+        let cash=0,mood=0,sta=0,reason='';
+        const foods=['在小吃摊吃了碗面','点了一份外卖','买了个饭团'];
+        const fancy=['去米其林享受了一顿','聚餐奢侈了一把'];
+        const games=['通宵打游戏','玩了几局放松'];
+        const goodS=['与朋友聚会很开心','认识了新朋友'];
+        const badS=['和朋友闹掰了','聚会中被冷落'];
+        switch(type){
+            case'cheapfood':sta=randInt(20,40);if(gs.stamina<sta)return showToast('体力不足','err');cash=randInt(1,100);mood=randInt(2,5);reason=foods[randInt(0,foods.length-1)];break;
+            case'fancyfood':sta=randInt(20,40);if(gs.stamina<sta)return;cash=randInt(200,500);mood=10;reason=fancy[randInt(0,fancy.length-1)];break;
+            case'gaming':sta=randInt(10,20);if(gs.stamina<sta)return;mood=5;reason=games[randInt(0,games.length-1)];break;
+            case'social':
+                sta=randInt(10,20);if(gs.stamina<sta)return;cash=randInt(100,200);
+                let r=Math.random();
+                if(r<0.05){
+                    let stocks=assetDefs.filter(d=>d.cat==='stock').map(d=>d.id);
+                    gs.recommendedStock=stocks[randInt(0,stocks.length-1)];
+                    reason=`遇到金融人士！推荐关注${gs.assets[gs.recommendedStock]?.name}`;
+                    mood=15;
+                }else{
+                    mood=Math.random()<0.3?-randInt(2,4):15;
+                    reason=mood>=0?goodS[randInt(0,goodS.length-1)]:badS[randInt(0,badS.length-1)];
+                }
+                break;
+        }
+        if(cash>gs.cash)return showToast('当前现金不足无法购买','err');
+        gs.cash-=cash;gs.stamina-=sta;gs.mood+=mood;                  
+        gs.eventLog.unshift({day:gs.day,text:`🎭 ${reason} 心情${mood>=0?'+'+mood:mood}`});
+        if(gs.mood<0)endGame('心情崩溃');refreshUI();
+    }
+    function renderEvents(){let html='';gs.eventLog.slice(0,20).forEach(e=>{html+=`<div class="event-item"><span class="day-tag">D${e.day}</span>${e.text}</div>`;});document.getElementById('eventLogContent').innerHTML=html||'暂无';}
+    function renderAchievements(){
+        let html='';ACHIEVEMENTS.forEach(a=>{let unlocked=gs.unlockedAchievements.has(a.id);html+=`<div class="achievement-item${unlocked?'':' locked'}"><span>${unlocked?'🏆':'🔒'}</span><div><strong>${a.name}</strong><br><small>${a.desc}</small></div></div>`;});
+        document.getElementById('achievementList').innerHTML=html||'暂无成就';
+    }
+    function renderMilestones(){
+        let html='';let ta=totalAsset();
+        MILESTONES.forEach(m=>{let achieved=ta>=m;html+=`<div class="achievement-item${achieved?'':' locked'}"><span>${achieved?'✅':'⬜'}</span><div><strong>资产达到 ¥${m.toLocaleString()}</strong><br><small>${achieved?'已达成 (奖金已发放)':'未达成'}</small></div></div>`;});
+        document.getElementById('milestoneList').innerHTML=html;
+    }
+    function checkAchievements(){ACHIEVEMENTS.forEach(a=>{if(!gs.unlockedAchievements.has(a.id)&&a.check(gs)){gs.unlockedAchievements.add(a.id);showToast(`🏅 成就解锁：${a.name}`);}});}
+
+    function selectAsset(id){
+        gs.selectedAssetId=id;
+        document.getElementById('tradeQty').value=100;
+        refreshUI();
+        switchView('trade');
+        drawChart(id);
+    }
+    function quickSell(id){gs.selectedAssetId=id;document.getElementById('tradeQty').value=gs.holdings[id]?.qty||0;refreshUI();switchView('trade');}
+    function switchView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+name).classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.querySelector(`.nav-item[data-view="${name}"]`).classList.add('active');}
+    function showToast(msg,type=''){let c=document.getElementById('toastContainer'),t=document.createElement('div');t.className='toast'+(type==='err'?' err':'');t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2000);}
+
+    function updateTradeInfo(){
+        let info=document.getElementById('tradeSelectedInfo'),est=document.getElementById('tradeEstimate'),qty=parseInt(document.getElementById('tradeQty').value)||0;
+        if(!gs.selectedAssetId || !gs.assets[gs.selectedAssetId]){
+            info.textContent='👆 请选择资产';
+            est.textContent='--';
+            return;
+        }
+        let a=gs.assets[gs.selectedAssetId];
+        info.innerHTML=`已选 <strong>${a.name}</strong> ¥${a.currentPrice.toFixed(2)}`;
+        est.textContent=qty>0?`预计 ¥${(a.currentPrice*qty).toFixed(2)}`:'--';
+    }
+
+    // K线绘图
+    function drawChart(id){
+        let asset=gs.assets[id];if(!asset)return;
+        let canvas=document.getElementById('klineCanvas');
+        let container=document.getElementById('chartPanel');
+        let ctx=canvas.getContext('2d');
+        let ohlc=asset.ohlc.slice(-50);
+        if(!ohlc.length)return;
+        container.style.display='block';
+        canvas.width=container.clientWidth-8;
+        canvas.height=100;
+        let w=canvas.width,h=canvas.height;
+        ctx.clearRect(0,0,w,h);
+        let min=Math.min(...ohlc.map(d=>d.low)),max=Math.max(...ohlc.map(d=>d.high)),range=max-min||1;
+        let candleWidth=Math.max(1,(w-10)/ohlc.length-2);
+        ohlc.forEach((d,i)=>{
+            let x=5+i*(candleWidth+2);
+            let openY=h-15-((d.open-min)/range)*(h-30);
+            let closeY=h-15-((d.close-min)/range)*(h-30);
+            let highY=h-15-((d.high-min)/range)*(h-30);
+            let lowY=h-15-((d.low-min)/range)*(h-30);
+            ctx.strokeStyle='#8b929a';
+            ctx.beginPath();ctx.moveTo(x+candleWidth/2,highY);ctx.lineTo(x+candleWidth/2,lowY);ctx.stroke();
+            ctx.fillStyle=d.close>=d.open?'#4ade80':'#f87171';
+            ctx.fillRect(x,Math.min(openY,closeY),candleWidth,Math.abs(closeY-openY)||1);
+        });
+        let maxVol=Math.max(...ohlc.map(d=>d.volume));
+        let volBottom=h-5;
+        ohlc.forEach((d,i)=>{
+            let x=5+i*(candleWidth+2);
+            let barH=(d.volume/maxVol)*15;
+            ctx.fillStyle=d.close>=d.open?'rgba(74,222,128,0.5)':'rgba(248,113,113,0.5)';
+            ctx.fillRect(x,volBottom-barH,candleWidth,barH);
+        });
+        document.getElementById('volInfo').textContent=`成交量: ${ohlc[ohlc.length-1].volume}`;
+        let closes=ohlc.map(d=>d.close);
+        function ema(data,n){let k=2/(n+1);let arr=[data[0]];for(let i=1;i<data.length;i++) arr.push(data[i]*k + arr[i-1]*(1-k));return arr;}
+        if(closes.length>=26){
+            let ema12=ema(closes,12),ema26=ema(closes,26);
+            ctx.strokeStyle='#f0b90b';ctx.lineWidth=1;ctx.beginPath();
+            for(let i=0;i<ohlc.length;i++){let x=5+i*(candleWidth+2)+candleWidth/2;let y=h-15-((ema12[i]-min)/range)*(h-30);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+            ctx.stroke();
+            ctx.strokeStyle='#60a5fa';ctx.beginPath();
+            for(let i=0;i<ohlc.length;i++){let x=5+i*(candleWidth+2)+candleWidth/2;let y=h-15-((ema26[i]-min)/range)*(h-30);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+            ctx.stroke();
+            let dif=ema12.map((v,i)=>v-ema26[i]),dea=ema(dif,9),macdVal=2*(dif[dif.length-1]-dea[dea.length-1]);
+            document.getElementById('macdInfo').textContent=`MACD: ${macdVal.toFixed(3)}`;
+        }else document.getElementById('macdInfo').textContent='MACD: 数据不足';
+    }
+
+    document.querySelectorAll('.nav-item').forEach(i=>i.addEventListener('click',()=>switchView(i.dataset.view)));
+    document.getElementById('btnNextDay').addEventListener('click',()=>{if(gs.gameOver && gs.winAchieved) gs.gameOver=false; if(!gs.gameOver || gs.winAchieved) advanceDay();});
+    document.getElementById('btnBuy').addEventListener('click',()=>{if(!gs.selectedAssetId)return;let r=buyAsset(gs.selectedAssetId,parseInt(document.getElementById('tradeQty').value)||0);if(r)refreshUI();});
+    document.getElementById('btnSell').addEventListener('click',()=>{if(!gs.selectedAssetId)return;let r=sellAsset(gs.selectedAssetId,parseInt(document.getElementById('tradeQty').value)||0);if(r)refreshUI();});
+    document.getElementById('tradeQty').addEventListener('input',updateTradeInfo);
+    initAssets();refreshUI();switchView('trade');
+</script>
+</body>
+</html>
